@@ -16,6 +16,23 @@ comboListFlag = []
 for i in range(0, len(df)):
     comboListFlag.append((df.TruckName[i], df.TARException[i], df.FlagWeightOverriden[i]))
 
+comboListWeights = []
+for i in range(0, len(df)):
+    theoWeight = df.WeightProductTradeUnitUsed[i]
+    if df.Quantity[i] != 0:
+        measuredWeight = df.Weight[i] / df.Quantity[i]
+        if theoWeight != 0:
+            comboListWeights.append((df.TruckName[i], (measuredWeight - theoWeight)/theoWeight, df.Weight[i]))
+        else:
+            comboListWeights.append((df.TruckName[i], 0, df.Weight[i]))
+    else:
+        measuredWeight = df.Weight[i]
+        if theoWeight != 0:
+            comboListWeights.append((df.TruckName[i], (measuredWeight - theoWeight)/theoWeight, df.Weight[i]))
+        else:
+            comboListWeights.append((df.TruckName[i], 0, df.Weight[i]))
+
+
 listOfTrucks = []
 for truck in df.TruckName:
     if truck not in listOfTrucks:
@@ -53,9 +70,23 @@ for truck in listOfTrucks:
                 countEquals += 1
     flagTARCorrelation.append(countEquals/countTotal)
 
+ratWeight = []
+negWeight = []
+for truck in listOfTrucks:
+    cnt = 0
+    totalWeightDiv = 0
+    cntNegWeight = 0
+    for name, rat, wgt in comboListWeights:
+        if truck == name:
+            cnt += 1
+            totalWeightDiv += rat
+            if wgt <= 0:
+                cntNegWeight += 1
+    ratWeight.append(totalWeightDiv / cnt)
+    negWeight.append(cntNegWeight)
 
-zipped = list(zip(listOfTrucks, countTarExceptions, missionsOfTruck, exceptionRate, flagTARCorrelation))
-newDF = pd.DataFrame(zipped, columns=['Trucks', 'TARExceptions', 'NumMissions', 'ExceptionRate', 'TARCorrelation'])
+zipped = list(zip(listOfTrucks, countTarExceptions, missionsOfTruck, exceptionRate, flagTARCorrelation, ratWeight, negWeight))
+newDF = pd.DataFrame(zipped, columns=['Trucks', 'TARExceptions', 'NumMissions', 'ExceptionRate', 'TARCorrelation', 'AvgWeightDiff', 'NumNegativeWeights'])
 
 dfHead = df.head()
 
