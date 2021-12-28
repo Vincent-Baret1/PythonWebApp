@@ -72,7 +72,7 @@ for truck in listOfTrucks:
     countTarExceptions.append(nbExp)
     missionsOfTruck.append(nbMissions)
     ratWeight.append(totalWeightDiv / cnt)
-    negWeight.append(cntNegWeight)
+    negWeight.append(cntNegWeight/nbMissions)
 
 for i in range(0, len(countTarExceptions)):
     exceptionRate.append(countTarExceptions[i]/missionsOfTruck[i])
