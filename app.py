@@ -3,8 +3,10 @@ import dash
 from dash import dash_table
 from dash import dcc
 from dash import html
+from dash import Input, Output
 import plotly.express as px
 import pandas as pd
+import dash_bootstrap_components as dbc
 
 print("Reading raw data...")
 df = pd.read_csv('data_balea.csv', sep=';')
@@ -27,54 +29,56 @@ fig2DF = pd.DataFrame(zipped, columns=['Trucks', 'TARExceptions', 'NumNegativeWe
 fig = px.scatter(figDF, x="missions", y="exceptions", color="names", hover_name="names", log_x=True)
 fig2 = px.bar(fig2DF, x="Trucks", y="NumNegativeWeights", color="Trucks", hover_name="Trucks")
 
-app = dash.Dash(__name__)
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-app.layout = html.Div(children=[
-    html.H1(children='Balea Data Analysis'),
+navbar = dbc.NavbarSimple(
+    children=[
+            dbc.NavItem(dbc.NavItem(dbc.NavLink("Analysis", href="/Analysis"))),
+            dbc.DropdownMenu(
+                children= [
+                    dbc.DropdownMenuItem("Raw Data", href="/RawData"),
+                    dbc.DropdownMenuItem("Truck Data", href="/TruckData"),
+                    dbc.DropdownMenuItem("Exceptions Graph", href="/ExceptionsGraph"),
+                    ],
+                nav=True,
+                in_navbar=True,
+                label="Data",),
+        ],
+    brand="Balea Data Analysis",
+    brand_href="/",
+    color="primary",
+    dark=True)
 
-    dcc.Tabs([
-        dcc.Tab(label='Data', children=[
-            dcc.Tabs([
-                dcc.Tab(label='Raw Data', children=[
-                    html.Div(children='''
-                        Header table of the raw data.
-                    '''),
-                    dash_table.DataTable(
-                    id = 'table-head',
-                    columns = [{"name":i, "id":i} for i in df.columns],
-                    data = df.to_dict('records'),
-                    page_size=50
-                    )
-                ]),
+@app.callback(Output("page-content", "children"), [Input("url", "pathname")])
+def render_page_content(pathname):
+    if pathname == "/":
+        return html.P("Home page")
+    elif pathname == "/RawData":
+        return html.Div(dash_table.DataTable(id = 'table-head',columns = [{"name":i, "id":i} for i in df.columns],data = df.to_dict('records'),page_size=50))
+    elif pathname == "/TruckData":
+        return html.Div( dash_table.DataTable(id = 'new-table',columns = [{"name":i, "id":i} for i in newDF.columns],data = newDF.to_dict('records')))
+    elif pathname == "/ExceptionsGraph":
+        return html.Div(dcc.Graph(id='graph-of-new-data',figure=fig))
+    elif pathname == "/Analysis":
+        return html.Div(dcc.Graph(id='data-graph',figure=fig2))
+    
+    # If the user tries to reach a different page, return a 404 message
+    return dbc.Jumbotron(
+        [
+            html.H1("404: Not found", className="text-danger"),
+            html.Hr(),
+            html.P("The pathname {pathname} was not recognised..."),
+        ]
+    )
 
-                dcc.Tab(label='Truck Data', children=[
-                    html.Div(children='''
-                        Synthesised table of data for each truck.
-                    '''),
-                    dash_table.DataTable(
-                    id = 'new-table',
-                    columns = [{"name":i, "id":i} for i in newDF.columns],
-                    data = newDF.to_dict('records')
-                    )
-                ]),
-                
-                dcc.Tab(label='Exceptions Graph', children=[
-                    dcc.Graph(
-                        id='graph-of-new-data',
-                        figure=fig
-                    )
-                ]),
-            ])
-        ]),
-        dcc.Tab(label='Analysis', children=[
-            html.H1(children='Balea Truck Data Analysis'),
+content = html.Div(id="page-content")
 
-            dcc.Graph(
-                id='data-graph',
-                figure=fig2
-            )
-        ])
-    ])
+app.layout = html.Div([dcc.Location(id="url") ,
+    
+    navbar,
+    content
+
+    
 ])
 
 if __name__ == '__main__':
